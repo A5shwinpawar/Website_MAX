@@ -52,8 +52,8 @@ body {
 .toran .strand {
   position: absolute; top: 6px; width: 14px;
   background: radial-gradient(circle at 50% 50%, var(--c1) 0 52%, var(--c2) 56% 62%, transparent 64%) 0 0 / 14px 12px repeat-y;
-  filter: drop-shadow(0 2px 2px rgba(0,0,0,.35));
   transform-origin: top center;
+  will-change: transform;
   animation: sway 4s ease-in-out infinite alternate;
   animation-delay: var(--d);
 }
@@ -147,7 +147,7 @@ body {
   transform-origin: 50% 90%;
   transform: scale(0);
   transition: transform .7s cubic-bezier(.2,1.6,.4,1);
-  filter: blur(.3px);
+  will-change: transform;
 }
 .lit .flame { transform: scale(1); animation: flicker 1.6s ease-in-out infinite; }
 @keyframes flicker {
@@ -210,19 +210,21 @@ body {
   background: linear-gradient(180deg, #ffe3a0 0%, #ffab4a 55%, #e2602a 100%);
   box-shadow: 0 0 calc(var(--w) * .9) calc(var(--w) * .25) rgba(255,150,60,.45);
   opacity: 0;
-  animation: rise var(--t) linear forwards, drift 5s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+  animation: rise var(--t) linear forwards;
 }
 .lantern::after {
   content: ""; position: absolute; left: 30%; right: 30%; bottom: 10%; height: 22%;
   border-radius: 50%; background: radial-gradient(circle, #fff7d0, transparent 70%);
 }
 @keyframes rise {
-  0% { transform: translateY(0) scale(1); opacity: 0; }
+  0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0; }
   8% { opacity: .95; }
-  80% { opacity: .85; }
-  100% { transform: translateY(calc(-100vh - 120px)) scale(.55); opacity: 0; }
+  25% { transform: translate3d(14px, -25vh, 0) scale(.9); }
+  50% { transform: translate3d(-14px, -50vh, 0) scale(.78); }
+  75% { transform: translate3d(12px, -75vh, 0) scale(.66); opacity: .85; }
+  100% { transform: translate3d(-8px, calc(-100vh - 120px), 0) scale(.55); opacity: 0; }
 }
-@keyframes drift { from { margin-left: -14px; } to { margin-left: 14px; } }
 
 .hint {
   position: fixed; left: 50%; transform: translateX(-50%);
@@ -306,7 +308,6 @@ body {
     <svg viewBox="0 0 120 64" aria-hidden="true"><use href="#diya-shape"/></svg>
     <span class="flame"></span>
   </button>
-  <p class="cta" id="cta">Lighting the diya…</p>
 </main>
 
 <p class="hint">Tap the sky for fireworks &amp; sound</p>
@@ -363,143 +364,193 @@ body {
   /* ---------- canvas: stars + fireworks ---------- */
   const cv = document.getElementById('sky');
   const ctx = cv.getContext('2d');
-  let W = 0, H = 0, stars = [];
+  const small = Math.min(innerWidth, innerHeight) < 600;
+  const MAX_SPARKS = small ? 650 : 1100;
+  let W = 0, H = 0, starLayer = null, twinkles = [];
+
+  // one soft glow sprite, reused for every flash
+  const glow = document.createElement('canvas');
+  glow.width = glow.height = 64;
+  {
+    const g = glow.getContext('2d');
+    const rg = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    rg.addColorStop(0, 'rgba(255,244,220,1)');
+    rg.addColorStop(0.35, 'rgba(255,200,120,.45)');
+    rg.addColorStop(1, 'rgba(255,160,80,0)');
+    g.fillStyle = rg; g.fillRect(0, 0, 64, 64);
+  }
+
   function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, small ? 1.5 : 1.75);
     W = innerWidth; H = innerHeight;
-    cv.width = W * dpr; cv.height = H * dpr;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // static stars drawn once to an offscreen layer
+    starLayer = document.createElement('canvas');
+    starLayer.width = cv.width; starLayer.height = cv.height;
+    const s = starLayer.getContext('2d');
+    s.setTransform(dpr, 0, 0, dpr, 0, 0);
+    s.fillStyle = '#fff6e6';
     const n = Math.round(W * H / 4200);
-    stars = Array.from({ length: n }, () => ({
-      x: Math.random() * W, y: Math.random() * H * 0.75,
-      r: Math.random() * 1.2 + 0.2, p: Math.random() * Math.PI * 2, s: 0.5 + Math.random() * 1.5
+    for (let i = 0; i < n; i++) {
+      s.globalAlpha = 0.25 + Math.random() * 0.6;
+      s.beginPath(); s.arc(Math.random() * W, Math.random() * H * 0.75, Math.random() * 1.1 + 0.2, 0, Math.PI * 2); s.fill();
+    }
+    // a handful that twinkle
+    twinkles = Array.from({ length: 18 }, () => ({
+      x: Math.random() * W, y: Math.random() * H * 0.7, r: 1 + Math.random() * 0.8,
+      p: Math.random() * 6.28, s: 0.8 + Math.random() * 1.6
     }));
   }
   resize();
-  addEventListener('resize', resize);
+  let rT; addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(resize, 150); });
 
   const PALETTES = [
     ['#ffd36b', '#ff9a1f', '#fff3dc'],
-    ['#ff5b8a', '#ffc75a', '#fff'],
+    ['#ff5b8a', '#ffc75a', '#ffffff'],
     ['#7fe3ff', '#c6a8ff', '#ffffff'],
     ['#9dff8a', '#ffd36b', '#fff3dc'],
     ['#ff7b2e', '#e2483d', '#ffd36b'],
     ['#ff8ae0', '#b18cff', '#ffe9ff']
   ];
-  const rockets = [], sparks = [];
+  const GOLD = ['#ffd36b', '#ffb84a', '#fff1c2'];
+  const rockets = [], sparks = [], flashes = [];
   const rnd = (a, b) => a + Math.random() * (b - a);
   const pick = a => a[(Math.random() * a.length) | 0];
 
   function launch(tx, ty) {
     const sx = Math.min(W - 20, Math.max(20, tx + rnd(-60, 60)));
-    rockets.push({ sx, sy: H + 10, x: sx, y: H + 10, tx, ty, t: 0, dur: rnd(48, 70), pal: pick(PALETTES) });
+    rockets.push({ sx, sy: H + 10, x: sx, y: H + 10, tx, ty, t: 0, dur: rnd(42, 58), pal: pick(PALETTES) });
     whoosh();
   }
 
   function explode(r) {
     const kind = Math.random();
-    const n = reduce ? 40 : (kind < 0.2 ? 140 : 95);
-    const base = rnd(2.6, 4.2) * Math.min(1, Math.max(0.65, W / 900));
+    const room = MAX_SPARKS - sparks.length;
+    let n = reduce ? 36 : (small ? (kind < 0.2 ? 90 : 64) : (kind < 0.2 ? 130 : 90));
+    n = Math.max(0, Math.min(n, room));
+    const base = rnd(2.6, 4.0) * Math.min(1, Math.max(0.7, W / 900));
+    const willow = kind >= 0.3 && kind < 0.5;
     for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2 + rnd(-0.05, 0.05);
-      let sp;
-      if (kind < 0.3) sp = base;                       // ring
-      else if (kind < 0.5) sp = base * rnd(0.3, 1.1) * 0.8; // willow (slow, gold)
-      else sp = base * Math.cbrt(Math.random());        // peony
-      const willow = kind >= 0.3 && kind < 0.5;
+      const a = (i / n) * 6.2832 + rnd(-0.05, 0.05);
+      const sp = kind < 0.3 ? base : willow ? base * rnd(0.35, 0.9) : base * Math.cbrt(Math.random());
       sparks.push({
         x: r.x, y: r.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-        life: 1, decay: willow ? rnd(0.006, 0.01) : rnd(0.012, 0.022),
-        color: willow ? pick(['#ffd36b', '#ffb84a', '#fff1c2']) : pick(r.pal),
-        w: willow ? 1.3 : rnd(1.4, 2.4), g: willow ? 0.025 : 0.045, glitter: Math.random() < 0.25
+        life: 1, decay: willow ? rnd(0.007, 0.011) : rnd(0.014, 0.022),
+        c: willow ? pick(GOLD) : pick(r.pal),
+        w: willow ? 1.4 : (Math.random() < 0.5 ? 1.6 : 2.3), g: willow ? 0.025 : 0.045
       });
     }
-    // a bright flash core
-    sparks.push({ x: r.x, y: r.y, vx: 0, vy: 0, life: 1, decay: 0.08, color: '#fff', w: 26, g: 0, flash: true });
+    flashes.push({ x: r.x, y: r.y, life: 1 });
     boom();
   }
 
-  function frame(t) {
-    ctx.clearRect(0, 0, W, H);
-    // stars
+  // batch strokes: one path per (colour, width, alpha level)
+  const buckets = new Map();
+  let last = performance.now();
+  function frame(now) {
+    let step = (now - last) / 16.667; last = now;
+    if (step > 3) step = 3;
+    const fr = Math.pow(0.982, step);
+
     ctx.globalCompositeOperation = 'source-over';
-    for (const s of stars) {
-      const a = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t / 1000 * s.s + s.p));
-      ctx.globalAlpha = reduce ? 0.7 : a;
-      ctx.fillStyle = '#fff6e6';
-      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.clearRect(0, 0, W, H);
+    ctx.drawImage(starLayer, 0, 0, W, H);
+    ctx.fillStyle = '#fff6e6';
+    for (const s of twinkles) {
+      ctx.globalAlpha = reduce ? 0.7 : 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(now * 0.001 * s.s + s.p));
+      ctx.fillRect(s.x - s.r, s.y - s.r, s.r * 2, s.r * 2);
     }
+
     ctx.globalCompositeOperation = 'lighter';
+    ctx.lineCap = 'round';
+
     // rockets
+    ctx.strokeStyle = '#ffd9a0'; ctx.lineWidth = 2; ctx.globalAlpha = 0.9;
+    ctx.beginPath();
     for (let i = rockets.length - 1; i >= 0; i--) {
       const r = rockets[i];
-      r.t++;
+      r.t += step;
       const k = Math.min(1, r.t / r.dur), e = 1 - Math.pow(1 - k, 2.2);
-      const px = r.x, py = r.y;
       r.x = r.sx + (r.tx - r.sx) * e;
       r.y = r.sy + (r.ty - r.sy) * e;
-      ctx.globalAlpha = 0.9;
-      ctx.strokeStyle = '#ffd9a0'; ctx.lineWidth = 2; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(px, py + 8); ctx.lineTo(r.x, r.y); ctx.stroke();
-      if (!reduce && Math.random() < 0.6) sparks.push({ x: r.x, y: r.y, vx: rnd(-0.4, 0.4), vy: rnd(0.5, 1.4), life: 0.7, decay: 0.04, color: '#ffb35a', w: 1.2, g: 0.02 });
+      ctx.moveTo(r.x, r.y + 14); ctx.lineTo(r.x, r.y);
+      if (!reduce && sparks.length < MAX_SPARKS && Math.random() < 0.4 * step)
+        sparks.push({ x: r.x, y: r.y, vx: rnd(-0.4, 0.4), vy: rnd(0.5, 1.4), life: 0.7, decay: 0.045, c: '#ffb35a', w: 1.4, g: 0.02 });
       if (k >= 1) { rockets.splice(i, 1); explode(r); }
     }
-    // sparks
-    for (let i = sparks.length - 1; i >= 0; i--) {
-      const p = sparks[i];
-      p.vx *= 0.982; p.vy = p.vy * 0.982 + p.g;
-      p.x += p.vx; p.y += p.vy;
-      p.life -= p.decay;
-      if (p.life <= 0) { sparks.splice(i, 1); continue; }
-      if (p.flash) {
-        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.w * 3);
-        g.addColorStop(0, 'rgba(255,240,210,' + (p.life * 0.8) + ')');
-        g.addColorStop(1, 'rgba(255,180,90,0)');
-        ctx.globalAlpha = 1; ctx.fillStyle = g;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.w * 3, 0, Math.PI * 2); ctx.fill();
-        continue;
-      }
-      let a = p.life;
-      if (p.glitter && p.life < 0.6) a *= Math.random() < 0.5 ? 0.2 : 1;
-      ctx.globalAlpha = Math.min(1, a);
-      ctx.strokeStyle = p.color; ctx.lineWidth = p.w; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(p.x - p.vx * 3, p.y - p.vy * 3); ctx.lineTo(p.x, p.y); ctx.stroke();
+    ctx.stroke();
+
+    // flashes
+    for (let i = flashes.length - 1; i >= 0; i--) {
+      const f = flashes[i];
+      f.life -= 0.07 * step;
+      if (f.life <= 0) { flashes.splice(i, 1); continue; }
+      const size = 150 * (1.2 - f.life * 0.4);
+      ctx.globalAlpha = f.life * 0.9;
+      ctx.drawImage(glow, f.x - size / 2, f.y - size / 2, size, size);
     }
-    ctx.globalAlpha = 1;
+
+    // sparks: update, then bucket
+    for (const arr of buckets.values()) arr.length = 0;
+    let j = 0;
+    for (let i = 0; i < sparks.length; i++) {
+      const p = sparks[i];
+      p.vx *= fr; p.vy = p.vy * fr + p.g * step;
+      p.x += p.vx * step; p.y += p.vy * step;
+      p.life -= p.decay * step;
+      if (p.life <= 0 || p.y > H + 20) continue;
+      sparks[j++] = p;
+      const lvl = Math.min(4, (p.life * 5) | 0);
+      const key = p.c + '|' + p.w + '|' + lvl;
+      let arr = buckets.get(key);
+      if (!arr) { arr = []; arr.c = p.c; arr.w = p.w; arr.a = (lvl + 1) / 5; buckets.set(key, arr); }
+      arr.push(p);
+    }
+    sparks.length = j;
+    for (const arr of buckets.values()) {
+      if (!arr.length) continue;
+      ctx.globalAlpha = arr.a; ctx.strokeStyle = arr.c; ctx.lineWidth = arr.w;
+      ctx.beginPath();
+      for (const p of arr) { ctx.moveTo(p.x - p.vx * 3, p.y - p.vy * 3); ctx.lineTo(p.x, p.y); }
+      ctx.stroke();
+    }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 
-  /* ---------- sound (Web Audio, made on the fly) ---------- */
-  let actx = null, muted = false;
-  function initAudio() {
-    try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume && actx.resume(); } catch (e) { actx = null; }
-  }
-  function noise(dur) {
+  /* ---------- sound (Web Audio, buffers made once) ---------- */
+  let actx = null, muted = false, boomBufs = [], whooshBuf = null;
+  function makeNoise(dur) {
     const len = Math.floor(actx.sampleRate * dur);
     const buf = actx.createBuffer(1, len, actx.sampleRate);
     const d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
-    const src = actx.createBufferSource(); src.buffer = buf; return src;
+    for (let i = 0; i < len; i++) { const k = 1 - i / len; d[i] = (Math.random() * 2 - 1) * k * k * k; }
+    return buf;
   }
-  function boom() {
-    if (!actx || muted) return;
-    const src = noise(rnd(0.9, 1.4));
-    const f = actx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = rnd(500, 1100);
-    const g = actx.createGain(); g.gain.value = rnd(0.35, 0.55);
+  function initAudio() {
+    try {
+      if (!actx) {
+        actx = new (window.AudioContext || window.webkitAudioContext)();
+        boomBufs = [makeNoise(1.0), makeNoise(1.3)];
+        whooshBuf = makeNoise(0.7);
+      }
+      if (actx.state === 'suspended') actx.resume();
+    } catch (e) { actx = null; }
+  }
+  const ready = () => actx && !muted && actx.state === 'running';
+  function play(buf, filterType, freq, gain, sweep) {
+    const src = actx.createBufferSource(); src.buffer = buf;
+    const f = actx.createBiquadFilter(); f.type = filterType; f.frequency.value = freq;
+    if (sweep) { f.Q.value = 3; f.frequency.setValueAtTime(600, actx.currentTime); f.frequency.exponentialRampToValueAtTime(3200, actx.currentTime + 0.6); }
+    const g = actx.createGain(); g.gain.value = gain;
     src.connect(f).connect(g).connect(actx.destination); src.start();
   }
-  function whoosh() {
-    if (!actx || muted) return;
-    const src = noise(0.7);
-    const f = actx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 3;
-    f.frequency.setValueAtTime(600, actx.currentTime);
-    f.frequency.exponentialRampToValueAtTime(3200, actx.currentTime + 0.6);
-    const g = actx.createGain(); g.gain.value = 0.06;
-    src.connect(f).connect(g).connect(actx.destination); src.start();
-  }
+  function boom() { if (ready()) play(pick(boomBufs), 'lowpass', rnd(500, 1100), rnd(0.35, 0.55)); }
+  function whoosh() { if (ready()) play(whooshBuf, 'bandpass', 600, 0.06, true); }
   function chime() {
-    if (!actx || muted) return;
+    if (!ready()) return;
     [523.25, 659.25, 783.99, 1046.5].forEach((hz, i) => {
       const o = actx.createOscillator(), g = actx.createGain();
       o.type = 'sine'; o.frequency.value = hz;
@@ -527,7 +578,7 @@ body {
     const l = document.createElement('div');
     l.className = 'lantern';
     const w = rnd(14, 30);
-    l.style.cssText = `left:${rnd(4, 94)}%;--w:${w}px;--t:${rnd(14, 24)}s;animation-delay:0s,${rnd(-5, 0)}s`;
+    l.style.cssText = `left:${rnd(4, 94)}%;--w:${w}px;--t:${rnd(14, 24)}s`;
     lanternBox.appendChild(l);
     l.addEventListener('animationend', ev => { if (ev.animationName === 'rise') l.remove(); });
   }
@@ -545,18 +596,18 @@ body {
     const volley = reduce ? 2 : 5;
     for (let i = 0; i < volley; i++) setTimeout(() => launch(rnd(W * 0.15, W * 0.85), rnd(H * 0.12, H * 0.38)), 900 + i * 380);
     for (let i = 0; i < (reduce ? 3 : 6); i++) setTimeout(lantern, 400 + i * 700);
-    setInterval(() => { if (lanternBox.children.length < 14) lantern(); }, reduce ? 4000 : 1800);
+    setInterval(() => { if (lanternBox.children.length < (small ? 9 : 14)) lantern(); }, reduce ? 4000 : 1800);
     if (!reduce) {
       (function auto() {
         if (!document.hidden) launch(rnd(W * 0.1, W * 0.9), rnd(H * 0.1, H * 0.42));
-        setTimeout(auto, rnd(900, 2000));
+        setTimeout(auto, rnd(1000, 2100));
       })();
     }
   }
 
   document.getElementById('diya').addEventListener('click', e => { e.stopPropagation(); light(); });
   // light the diya automatically shortly after the page opens
-  setTimeout(light, 1200);
+  setTimeout(light, 500);
   addEventListener('pointerdown', e => {
     if (e.target.closest('.sound')) return;
     if (!lit) { light(); return; }
