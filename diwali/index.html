@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shubh Deepavali</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Tap the diya to light up the night. Happy Diwali!">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Hindi&family=Marcellus&family=Mulish:wght@400;600&display=swap">
+<style>
+html,body{margin:0}
+/* Layout: one full-screen night scene — marigold toran on top, greeting centre, a row of clay diyas on the ground. */
+:root {
+  --night: #0b0716;
+  --dusk: #24123a;
+  --ember: #3a1626;
+  --gold: #ffc75a;
+  --marigold: #ff9a1f;
+  --vermilion: #e2483d;
+  --clay: #a8492a;
+  --cream: #fff3dc;
+  --muted: #cdb9dc;
+  --display: 'Tiro Devanagari Hindi', 'Noto Serif Devanagari', serif;
+  --latin: 'Marcellus', Georgia, serif;
+  --body: 'Mulish', system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background:
+    radial-gradient(120% 60% at 50% 105%, var(--ember) 0%, transparent 60%),
+    linear-gradient(180deg, var(--night) 0%, var(--dusk) 70%, #2c1430 100%);
+  background-color: var(--night);
+  color: var(--cream);
+  font-family: var(--body);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#sky { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+
+/* Marigold toran */
+.toran { position: fixed; top: 0; left: 0; right: 0; height: 120px; z-index: 3; pointer-events: none; }
+.toran .rope {
+  position: absolute; top: 0; left: 0; right: 0; height: 10px;
+  background: repeating-linear-gradient(90deg, #2f7a3a 0 18px, #3f9a48 18px 30px);
+  box-shadow: 0 2px 6px rgba(0,0,0,.4);
+}
+.toran .strand {
+  position: absolute; top: 6px; width: 14px;
+  background: radial-gradient(circle at 50% 50%, var(--c1) 0 52%, var(--c2) 56% 62%, transparent 64%) 0 0 / 14px 12px repeat-y;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,.35));
+  transform-origin: top center;
+  animation: sway 4s ease-in-out infinite alternate;
+  animation-delay: var(--d);
+}
+.toran .leaf {
+  position: absolute; top: 4px; width: 16px; height: 30px;
+  background: linear-gradient(160deg, #4fb35a, #1f6a2c);
+  border-radius: 0 100% 0 100%;
+  transform: rotate(var(--r));
+}
+@keyframes sway { from { transform: rotate(-2.5deg); } to { transform: rotate(2.5deg); } }
+
+/* Stage */
+.stage {
+  position: fixed; inset: 0; z-index: 2;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: clamp(14px, 3vh, 28px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: calc(110px + env(safe-area-inset-top, 0px)) calc(110px + env(safe-area-inset-bottom, 0px));
+  text-align: center;
+  pointer-events: none;
+}
+.greet { display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 34rem; }
+.hindi {
+  font-family: var(--display);
+  font-size: clamp(3rem, 13vw, 6rem);
+  line-height: 1.1;
+  margin: 0;
+  color: var(--gold);
+  text-shadow: 0 0 0 transparent;
+  opacity: .55;
+  transition: opacity 1.6s ease, text-shadow 2s ease, color 2s ease;
+}
+.eng {
+  font-family: var(--latin);
+  font-size: clamp(1.1rem, 4.6vw, 1.6rem);
+  letter-spacing: .32em;
+  text-transform: uppercase;
+  margin: 0;
+  color: var(--cream);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 1.4s ease .5s, transform 1.4s ease .5s;
+}
+.wish {
+  font-size: clamp(.98rem, 3.8vw, 1.12rem);
+  line-height: 1.65;
+  color: var(--muted);
+  margin: 4px 0 0;
+  max-width: 30rem;
+  text-wrap: balance;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 1.4s ease 1.1s, transform 1.4s ease 1.1s;
+}
+.from {
+  font-family: var(--latin);
+  font-size: clamp(1.05rem, 4.2vw, 1.3rem);
+  color: var(--gold);
+  margin: 2px 0 0;
+  opacity: 0;
+  transition: opacity 1.4s ease 1.8s;
+}
+
+/* Main diya */
+.diya-btn {
+  pointer-events: auto;
+  position: relative;
+  background: none; border: 0; padding: 40px 10px 4px; margin: 0;
+  cursor: pointer;
+  border-radius: 24px;
+  color: inherit;
+}
+.diya-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+.diya-btn svg { width: clamp(120px, 34vw, 170px); height: auto; display: block; filter: drop-shadow(0 8px 10px rgba(0,0,0,.5)); }
+.halo {
+  position: absolute; left: 50%; top: 18px; width: 220px; height: 220px;
+  transform: translate(-50%, -40%) scale(.2);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,190,90,.55) 0%, rgba(255,140,40,.18) 40%, transparent 70%);
+  opacity: 0;
+  transition: opacity 1.2s ease, transform 1.6s ease;
+  pointer-events: none;
+}
+.flame {
+  position: absolute; left: 50%; bottom: calc(100% - 52px);
+  width: 22px; height: 42px;
+  margin-left: -11px;
+  border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+  background: radial-gradient(ellipse at 50% 78%, #fff 0 14%, #fff2b0 24%, #ffc04a 44%, #ff7a1a 64%, rgba(255,90,20,0) 74%);
+  transform-origin: 50% 90%;
+  transform: scale(0);
+  transition: transform .7s cubic-bezier(.2,1.6,.4,1);
+  filter: blur(.3px);
+}
+.lit .flame { transform: scale(1); animation: flicker 1.6s ease-in-out infinite; }
+@keyframes flicker {
+  0%,100% { transform: scale(1) rotate(-1deg); }
+  25% { transform: scale(1.05, .95) rotate(2deg); }
+  50% { transform: scale(.95, 1.07) rotate(-2deg); }
+  75% { transform: scale(1.03, .97) rotate(1deg); }
+}
+.cta {
+  pointer-events: none;
+  font-size: .82rem; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--gold);
+  opacity: .9;
+  animation: breathe 2.4s ease-in-out infinite;
+  transition: opacity .6s ease;
+  margin: 0;
+}
+@keyframes breathe { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
+
+/* Diya row on the ground */
+.row {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 2;
+  display: flex; justify-content: center; align-items: flex-end;
+  gap: clamp(6px, 3vw, 26px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 calc(18px + env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
+}
+.mini { position: relative; width: clamp(34px, 9vw, 52px); }
+.mini svg { width: 100%; height: auto; display: block; }
+.mini .flame {
+  width: 10px; height: 20px; margin-left: -5px; bottom: calc(100% - 14px);
+  transition-delay: calc(var(--i) * 140ms + 600ms);
+}
+.mini::after {
+  content: ""; position: absolute; left: 50%; bottom: 60%; width: 90px; height: 90px;
+  transform: translate(-50%, 30%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,170,70,.35), transparent 65%);
+  opacity: 0; transition: opacity 1s ease; transition-delay: calc(var(--i) * 140ms + 600ms);
+}
+.lit .mini::after { opacity: 1; }
+.lit .mini .flame { animation-delay: calc(var(--i) * -0.37s); }
+
+/* Lit state */
+.lit .hindi { opacity: 1; color: #ffd47a; text-shadow: 0 0 18px rgba(255,170,60,.65), 0 0 50px rgba(255,120,30,.35); }
+.lit .eng, .lit .wish { opacity: 1; transform: none; }
+.lit .from { opacity: 1; }
+.lit .halo { opacity: 1; transform: translate(-50%, -40%) scale(1); }
+.lit .cta { animation: none; opacity: 0; }
+.lit .diya-btn { cursor: default; }
+
+/* Sky lanterns */
+.lanterns { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.lantern {
+  position: absolute; bottom: -60px;
+  width: var(--w); height: calc(var(--w) * 1.3);
+  border-radius: 42% 42% 28% 28% / 50% 50% 30% 30%;
+  background: linear-gradient(180deg, #ffe3a0 0%, #ffab4a 55%, #e2602a 100%);
+  box-shadow: 0 0 calc(var(--w) * .9) calc(var(--w) * .25) rgba(255,150,60,.45);
+  opacity: 0;
+  animation: rise var(--t) linear forwards, drift 5s ease-in-out infinite alternate;
+}
+.lantern::after {
+  content: ""; position: absolute; left: 30%; right: 30%; bottom: 10%; height: 22%;
+  border-radius: 50%; background: radial-gradient(circle, #fff7d0, transparent 70%);
+}
+@keyframes rise {
+  0% { transform: translateY(0) scale(1); opacity: 0; }
+  8% { opacity: .95; }
+  80% { opacity: .85; }
+  100% { transform: translateY(calc(-100vh - 120px)) scale(.55); opacity: 0; }
+}
+@keyframes drift { from { margin-left: -14px; } to { margin-left: 14px; } }
+
+.hint {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(clamp(34px, 9vw, 52px) + 40px + env(safe-area-inset-bottom, 0px));
+  z-index: 2; margin: 0;
+  font-size: .75rem; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--muted); opacity: 0; transition: opacity 1s ease 3.2s;
+  pointer-events: none; white-space: nowrap;
+}
+.lit .hint { opacity: .7; }
+
+.sound {
+  position: fixed; z-index: 4;
+  top: calc(18px + env(safe-area-inset-top, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid rgba(255,199,90,.45);
+  background: rgba(11,7,22,.6);
+  color: var(--gold);
+  font: 600 .7rem var(--body);
+  letter-spacing: .05em;
+  cursor: pointer;
+  opacity: 0; pointer-events: none; transition: opacity .8s ease 1s;
+}
+.sound:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.lit .sound { opacity: 1; pointer-events: auto; }
+.sound svg { width: 18px; height: 18px; display: block; margin: auto; }
+
+@media (max-height: 620px) {
+  .wish { display: none; }
+  .toran { height: 80px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toran .strand, .cta, .lit .flame { animation: none; }
+  .lantern { animation: rise var(--t) linear forwards; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="clay" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d06a3a"/>
+      <stop offset=".55" stop-color="#a8492a"/>
+      <stop offset="1" stop-color="#5e2312"/>
+    </linearGradient>
+    <linearGradient id="oil" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd27a"/>
+      <stop offset="1" stop-color="#b86a1c"/>
+    </linearGradient>
+    <symbol id="diya-shape" viewBox="0 0 120 64">
+      <path d="M4 22 Q60 30 116 22 Q112 30 106 38 Q90 60 60 61 Q30 60 14 38 Q8 30 4 22 Z" fill="url(#clay)"/>
+      <path d="M50 22 Q60 6 70 22 Z" fill="url(#clay)"/>
+      <ellipse cx="60" cy="23" rx="54" ry="6.5" fill="#6e2a14"/>
+      <ellipse cx="60" cy="23" rx="46" ry="4.2" fill="url(#oil)"/>
+      <path d="M59 22 q1 -9 2 -14" stroke="#2a160c" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      <g fill="#ffc75a">
+        <circle cx="24" cy="38" r="2.2"/><circle cx="36" cy="44" r="2.2"/><circle cx="48" cy="47" r="2.2"/>
+        <circle cx="60" cy="48" r="2.6"/><circle cx="72" cy="47" r="2.2"/><circle cx="84" cy="44" r="2.2"/><circle cx="96" cy="38" r="2.2"/>
+      </g>
+      <path d="M22 32 Q60 42 98 32" stroke="#ffc75a" stroke-width="1.2" fill="none" opacity=".8"/>
+      <path d="M30 52 Q60 58 90 52" stroke="#e2483d" stroke-width="1.6" fill="none" opacity=".9"/>
+    </symbol>
+  </defs>
+</svg>
+
+<canvas id="sky" aria-hidden="true"></canvas>
+<div class="lanterns" id="lanterns" aria-hidden="true"></div>
+<div class="toran" id="toran" aria-hidden="true"><div class="rope"></div></div>
+
+<main class="stage" id="stage">
+  <div class="greet">
+    <h1 class="hindi" lang="hi">शुभ दीपावली</h1>
+    <p class="eng">Happy Diwali</p>
+    <p class="wish">May the light of every diya fill your home with warmth, your days with laughter, and the year ahead with health and prosperity.</p>
+    <p class="from" id="from"></p>
+  </div>
+  <button class="diya-btn" id="diya" type="button" aria-label="Light the diya">
+    <span class="halo"></span>
+    <svg viewBox="0 0 120 64" aria-hidden="true"><use href="#diya-shape"/></svg>
+    <span class="flame"></span>
+  </button>
+  <p class="cta" id="cta">Tap the diya to light it</p>
+</main>
+
+<p class="hint">Tap the sky for fireworks</p>
+<div class="row" id="row" aria-hidden="true"></div>
+
+<button class="sound" id="sound" type="button" aria-label="Mute sound" aria-pressed="false">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path id="wave" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/><path id="mute" d="M16 9l6 6M22 9l-6 6" hidden/></svg>
+</button>
+
+<script>
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const body = document.body;
+
+  /* ---------- personal sign-off from #Name ---------- */
+  try {
+    const raw = decodeURIComponent((location.hash || '').slice(1));
+    const name = raw.replace(/[-_+]+/g, ' ').replace(/[^\p{L}\p{N} .']/gu, '').trim().slice(0, 40);
+    const from = document.getElementById('from');
+    from.textContent = name ? 'With love, ' + name : 'Wishing you and your family a joyful festival of lights';
+  } catch (e) {}
+
+  /* ---------- toran ---------- */
+  const toran = document.getElementById('toran');
+  const strandCount = Math.max(9, Math.round(innerWidth / 34));
+  for (let i = 0; i < strandCount; i++) {
+    const s = document.createElement('div');
+    s.className = 'strand';
+    const x = (i + 0.5) / strandCount * 100;
+    const yellow = i % 2 === 0;
+    const len = 48 + (Math.sin(i * 1.7) * 0.5 + 0.5) * 60 * (i % 3 === 0 ? 1 : 0.6);
+    s.style.cssText = `left:calc(${x}% - 7px);height:${Math.round(len / 12) * 12}px;--c1:${yellow ? '#ffc21a' : '#ff8a12'};--c2:${yellow ? '#e89b00' : '#d9580a'};--d:${(-i * 0.6).toFixed(1)}s`;
+    toran.appendChild(s);
+    if (i < strandCount - 1) {
+      const l = document.createElement('div');
+      l.className = 'leaf';
+      l.style.cssText = `left:calc(${(i + 1) / strandCount * 100}% - 8px);--r:${i % 2 ? 20 : -20}deg`;
+      toran.appendChild(l);
+    }
+  }
+
+  /* ---------- diya row ---------- */
+  const row = document.getElementById('row');
+  const miniCount = innerWidth < 420 ? 5 : 7;
+  for (let i = 0; i < miniCount; i++) {
+    const d = document.createElement('div');
+    d.className = 'mini';
+    const fromCentre = Math.abs(i - (miniCount - 1) / 2);
+    d.style.setProperty('--i', fromCentre);
+    d.innerHTML = '<svg viewBox="0 0 120 64"><use href="#diya-shape"/></svg><span class="flame"></span>';
+    row.appendChild(d);
+  }
+
+  /* ---------- canvas: stars + fireworks ---------- */
+  const cv = document.getElementById('sky');
+  const ctx = cv.getContext('2d');
+  let W = 0, H = 0, stars = [];
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const n = Math.round(W * H / 4200);
+    stars = Array.from({ length: n }, () => ({
+      x: Math.random() * W, y: Math.random() * H * 0.75,
+      r: Math.random() * 1.2 + 0.2, p: Math.random() * Math.PI * 2, s: 0.5 + Math.random() * 1.5
+    }));
+  }
+  resize();
+  addEventListener('resize', resize);
+
+  const PALETTES = [
+    ['#ffd36b', '#ff9a1f', '#fff3dc'],
+    ['#ff5b8a', '#ffc75a', '#fff'],
+    ['#7fe3ff', '#c6a8ff', '#ffffff'],
+    ['#9dff8a', '#ffd36b', '#fff3dc'],
+    ['#ff7b2e', '#e2483d', '#ffd36b'],
+    ['#ff8ae0', '#b18cff', '#ffe9ff']
+  ];
+  const rockets = [], sparks = [];
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const pick = a => a[(Math.random() * a.length) | 0];
+
+  function launch(tx, ty) {
+    const sx = Math.min(W - 20, Math.max(20, tx + rnd(-60, 60)));
+    rockets.push({ sx, sy: H + 10, x: sx, y: H + 10, tx, ty, t: 0, dur: rnd(48, 70), pal: pick(PALETTES) });
+    whoosh();
+  }
+
+  function explode(r) {
+    const kind = Math.random();
+    const n = reduce ? 40 : (kind < 0.2 ? 140 : 95);
+    const base = rnd(2.6, 4.2) * Math.min(1, Math.max(0.65, W / 900));
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + rnd(-0.05, 0.05);
+      let sp;
+      if (kind < 0.3) sp = base;                       // ring
+      else if (kind < 0.5) sp = base * rnd(0.3, 1.1) * 0.8; // willow (slow, gold)
+      else sp = base * Math.cbrt(Math.random());        // peony
+      const willow = kind >= 0.3 && kind < 0.5;
+      sparks.push({
+        x: r.x, y: r.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+        life: 1, decay: willow ? rnd(0.006, 0.01) : rnd(0.012, 0.022),
+        color: willow ? pick(['#ffd36b', '#ffb84a', '#fff1c2']) : pick(r.pal),
+        w: willow ? 1.3 : rnd(1.4, 2.4), g: willow ? 0.025 : 0.045, glitter: Math.random() < 0.25
+      });
+    }
+    // a bright flash core
+    sparks.push({ x: r.x, y: r.y, vx: 0, vy: 0, life: 1, decay: 0.08, color: '#fff', w: 26, g: 0, flash: true });
+    boom();
+  }
+
+  function frame(t) {
+    ctx.clearRect(0, 0, W, H);
+    // stars
+    ctx.globalCompositeOperation = 'source-over';
+    for (const s of stars) {
+      const a = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t / 1000 * s.s + s.p));
+      ctx.globalAlpha = reduce ? 0.7 : a;
+      ctx.fillStyle = '#fff6e6';
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'lighter';
+    // rockets
+    for (let i = rockets.length - 1; i >= 0; i--) {
+      const r = rockets[i];
+      r.t++;
+      const k = Math.min(1, r.t / r.dur), e = 1 - Math.pow(1 - k, 2.2);
+      const px = r.x, py = r.y;
+      r.x = r.sx + (r.tx - r.sx) * e;
+      r.y = r.sy + (r.ty - r.sy) * e;
+      ctx.globalAlpha = 0.9;
+      ctx.strokeStyle = '#ffd9a0'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(px, py + 8); ctx.lineTo(r.x, r.y); ctx.stroke();
+      if (!reduce && Math.random() < 0.6) sparks.push({ x: r.x, y: r.y, vx: rnd(-0.4, 0.4), vy: rnd(0.5, 1.4), life: 0.7, decay: 0.04, color: '#ffb35a', w: 1.2, g: 0.02 });
+      if (k >= 1) { rockets.splice(i, 1); explode(r); }
+    }
+    // sparks
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const p = sparks[i];
+      p.vx *= 0.982; p.vy = p.vy * 0.982 + p.g;
+      p.x += p.vx; p.y += p.vy;
+      p.life -= p.decay;
+      if (p.life <= 0) { sparks.splice(i, 1); continue; }
+      if (p.flash) {
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.w * 3);
+        g.addColorStop(0, 'rgba(255,240,210,' + (p.life * 0.8) + ')');
+        g.addColorStop(1, 'rgba(255,180,90,0)');
+        ctx.globalAlpha = 1; ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.w * 3, 0, Math.PI * 2); ctx.fill();
+        continue;
+      }
+      let a = p.life;
+      if (p.glitter && p.life < 0.6) a *= Math.random() < 0.5 ? 0.2 : 1;
+      ctx.globalAlpha = Math.min(1, a);
+      ctx.strokeStyle = p.color; ctx.lineWidth = p.w; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(p.x - p.vx * 3, p.y - p.vy * 3); ctx.lineTo(p.x, p.y); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  /* ---------- sound (Web Audio, made on the fly) ---------- */
+  let actx = null, muted = false;
+  function initAudio() {
+    try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume && actx.resume(); } catch (e) { actx = null; }
+  }
+  function noise(dur) {
+    const len = Math.floor(actx.sampleRate * dur);
+    const buf = actx.createBuffer(1, len, actx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+    const src = actx.createBufferSource(); src.buffer = buf; return src;
+  }
+  function boom() {
+    if (!actx || muted) return;
+    const src = noise(rnd(0.9, 1.4));
+    const f = actx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = rnd(500, 1100);
+    const g = actx.createGain(); g.gain.value = rnd(0.35, 0.55);
+    src.connect(f).connect(g).connect(actx.destination); src.start();
+  }
+  function whoosh() {
+    if (!actx || muted) return;
+    const src = noise(0.7);
+    const f = actx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 3;
+    f.frequency.setValueAtTime(600, actx.currentTime);
+    f.frequency.exponentialRampToValueAtTime(3200, actx.currentTime + 0.6);
+    const g = actx.createGain(); g.gain.value = 0.06;
+    src.connect(f).connect(g).connect(actx.destination); src.start();
+  }
+  function chime() {
+    if (!actx || muted) return;
+    [523.25, 659.25, 783.99, 1046.5].forEach((hz, i) => {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = 'sine'; o.frequency.value = hz;
+      const t0 = actx.currentTime + i * 0.12;
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(0.12, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.6);
+      o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0 + 1.7);
+    });
+  }
+
+  const soundBtn = document.getElementById('sound');
+  soundBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    muted = !muted;
+    soundBtn.setAttribute('aria-pressed', String(muted));
+    soundBtn.setAttribute('aria-label', muted ? 'Turn sound on' : 'Mute sound');
+    document.getElementById('wave').toggleAttribute('hidden', muted);
+    document.getElementById('mute').toggleAttribute('hidden', !muted);
+  });
+
+  /* ---------- lanterns ---------- */
+  const lanternBox = document.getElementById('lanterns');
+  function lantern() {
+    const l = document.createElement('div');
+    l.className = 'lantern';
+    const w = rnd(14, 30);
+    l.style.cssText = `left:${rnd(4, 94)}%;--w:${w}px;--t:${rnd(14, 24)}s;animation-delay:0s,${rnd(-5, 0)}s`;
+    lanternBox.appendChild(l);
+    l.addEventListener('animationend', ev => { if (ev.animationName === 'rise') l.remove(); });
+  }
+
+  /* ---------- lighting ---------- */
+  let lit = false;
+  function light() {
+    if (lit) return;
+    lit = true;
+    initAudio();
+    body.classList.add('lit');
+    document.getElementById('diya').setAttribute('aria-label', 'The diya is lit');
+    setTimeout(chime, 150);
+    // opening volley
+    const volley = reduce ? 2 : 5;
+    for (let i = 0; i < volley; i++) setTimeout(() => launch(rnd(W * 0.15, W * 0.85), rnd(H * 0.12, H * 0.38)), 900 + i * 380);
+    for (let i = 0; i < (reduce ? 3 : 6); i++) setTimeout(lantern, 400 + i * 700);
+    setInterval(() => { if (lanternBox.children.length < 14) lantern(); }, reduce ? 4000 : 1800);
+    if (!reduce) {
+      (function auto() {
+        if (!document.hidden) launch(rnd(W * 0.1, W * 0.9), rnd(H * 0.1, H * 0.42));
+        setTimeout(auto, rnd(900, 2000));
+      })();
+    }
+  }
+
+  document.getElementById('diya').addEventListener('click', e => { e.stopPropagation(); light(); });
+  addEventListener('pointerdown', e => {
+    if (e.target.closest('.sound')) return;
+    if (!lit) { light(); return; }
+    initAudio();
+    launch(e.clientX, Math.min(e.clientY, H * 0.7));
+  });
+})();
+</script>
+</body>
+</html>
