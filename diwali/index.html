@@ -306,10 +306,10 @@ body {
     <svg viewBox="0 0 120 64" aria-hidden="true"><use href="#diya-shape"/></svg>
     <span class="flame"></span>
   </button>
-  <p class="cta" id="cta">Tap the diya to light it</p>
+  <p class="cta" id="cta">Lighting the diya…</p>
 </main>
 
-<p class="hint">Tap the sky for fireworks</p>
+<p class="hint">Tap the sky for fireworks &amp; sound</p>
 <div class="row" id="row" aria-hidden="true"></div>
 
 <button class="sound" id="sound" type="button" aria-label="Mute sound" aria-pressed="false">
@@ -555,6 +555,8 @@ body {
   }
 
   document.getElementById('diya').addEventListener('click', e => { e.stopPropagation(); light(); });
+  // light the diya automatically shortly after the page opens
+  setTimeout(light, 1200);
   addEventListener('pointerdown', e => {
     if (e.target.closest('.sound')) return;
     if (!lit) { light(); return; }
